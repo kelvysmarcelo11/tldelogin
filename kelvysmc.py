@@ -10,6 +10,21 @@ from kivy.graphics import Color, Rectangle
 from kivy.utils import get_color_from_hex
 from functools import partial
 from kivy.uix.modalview import ModalView
+import pyrebase
+
+firebaseConfig = {
+  'apiKey': "AIzaSyCA1eJe9zbB3MJCqMTPEuxnqimGRw-baoU",
+  'authDomain': "teladelginecdstcelo.firebaseapp.com",
+  'databaseURL': "https://teladelginecdstcelo-default-rtdb.firebaseio.com",
+  'projectId': "teladelginecdstcelo",
+  'storageBucket': "teladelginecdstcelo.appspot.com",
+  'messagingSenderId': "332409125916",
+  'appId': "1:332409125916:web:b9ba28826dd0c709dd73d9",
+  'measurementId': "G-7H9XH5CTEV"
+}
+
+firebase = pyrebase.initialize_app(firebaseConfig)
+auth = firebase.auth()
 
 class Login(RelativeLayout):
     def __init__(self, arg1=None, arg2=None, **kwargs):
@@ -29,31 +44,42 @@ class Login(RelativeLayout):
         self.add_widget(logo_image)
 
         
-        self.username_input = TextInput(hint_text="Nome de usuário", pos_hint={'center_x': 0.5, 'center_y': 0.5}, size_hint=(None, None), size=(300, 50))
+        self.email_input = TextInput(hint_text="Email", pos_hint={'center_x': 0.5, 'center_y': 0.5}, size_hint=(None, None), size=(300, 50))
         self.senha_input = TextInput(hint_text="Senha", password=True, pos_hint={'center_x': 0.5, 'center_y': 0.4}, size_hint=(None, None), size=(300, 50))
-        self.add_widget(self.username_input)
+        self.add_widget(self.email_input)
         self.add_widget(self.senha_input)
 
-        self.cadastrar_button = Button(text="Entrar", background_color=(0, 1, 0, 0.75), pos_hint={'center_x': 0.7, 'center_y': 0.3}, size_hint=(None, None), size=(350, 50))
-        self.login_button = Button(text="Não possui uma conta? Cadastre-se", background_color=(0.1, 0.5, 0.8, 1), pos_hint={'center_x': 0.3, 'center_y': 0.3}, size_hint=(None, None), size=(350, 50))
-        self.login_button.bind(on_release=partial(self.create_new_window, self.arg1, self.arg2))
-        self.add_widget(self.cadastrar_button)
+        self.login_button = Button(text="Entrar", background_color=(0, 1, 0, 0.75), pos_hint={'center_x': 0.7, 'center_y': 0.3}, size_hint=(None, None), size=(350, 50))
+        self.conta_button = Button(text="Não possui uma conta? Cadastre-se", background_color=(0.1, 0.5, 0.8, 1), pos_hint={'center_x': 0.3, 'center_y': 0.3}, size_hint=(None, None), size=(350, 50))
+        self.login_button.bind(on_release=partial(self.login, self.arg1, self.arg2))
+        self.conta_button.bind(on_release=partial(self.create_new_window, self.arg1, self.arg2))
+        self.add_widget(self.conta_button)
         self.add_widget(self.login_button)
 
         self.mensagem_label = Label(text="", pos_hint={'center_x': 0.5, 'center_y': 0.2}, size_hint=(None, None), size=(400, 50))
         self.add_widget(self.mensagem_label)
 
-    def cadastrar_usuario(self, instance):
-        self.mensagem_label.text = "Usuário cadastrado!"
-
     def create_new_window(self, arg1, arg2, instance):
-            new_window = NewWindow(arg1, arg2)
-            new_window.open()
+        new_window = NewWindow(arg1, arg2)
+        new_window.open()
 
     def open(self):
         self._window = ModalView(size_hint=(0.9, 0.9))
         self._window.add_widget(self)
         self._window.open()
+
+    def login(self, arg1, arg2, instance):
+              entrar_login = Login(arg1, arg2)
+              entrar_login.open()
+              email = self.email_input.text
+              password = self.senha_input.text 
+              try:
+                  auth.sign_in_with_email_and_password(email, password)
+                  print("Login bem sucedido")
+            # Código adicional após o login bem-sucedido
+              except:
+                print("Invalido login")
+
 
 class NewWindow(BoxLayout):
     def __init__(self, arg1, arg2, **kwargs):
@@ -69,28 +95,34 @@ class NewWindow(BoxLayout):
 
         self.add_widget(Label(text='Tela Cadastro', font_size=30, font_name='Georgia', color=get_color_from_hex('#1E90FF')))
 
-        self.username_input = TextInput(hint_text="Nome de usuário ...")
+
         self.email_input = TextInput(hint_text="Digite seu email ...")
-        self.celular_input = TextInput(hint_text="Digite o número do seu celular ...")
         self.senha_input = TextInput(hint_text="Digite sua senha ...", password=True)
 
-        self.add_widget(Label(text="Nome de usuário:", font_name='Arial', color=get_color_from_hex('#32CD32')))
-        self.add_widget(self.username_input)
         self.add_widget(Label(text="Email:", font_name='Arial', color=get_color_from_hex('#32CD32')))
         self.add_widget(self.email_input)
-        self.add_widget(Label(text="Celular:", font_name='Arial', color=get_color_from_hex('#32CD32')))
-        self.add_widget(self.celular_input)
         self.add_widget(Label(text="Senha:", font_name='Arial', color=get_color_from_hex('#32CD32')))
         self.add_widget(self.senha_input)
 
         self.button_cadastrar = Button(text='Cadastrar', background_color=(0, 0, 1))
-        self.button_cadastrar.bind(on_release=partial(self.entrar_interface_login, self.arg1, self.arg2))
+        self.button_cadastrar.bind(on_release=partial(self.cadastro))
         self.add_widget(self.button_cadastrar)
-    
-    def entrar_interface_login(self, arg1, arg2, instance):
-              entrar_login = Login(arg1, arg2)
-              entrar_login.open()
 
+        
+    def cadastro(self, instance):
+        email = self.email_input.text
+        password = self.senha_input.text
+        try:
+            auth.create_user_with_email_and_password(email, password)
+            print("Registrado com sucesso")
+            self.open_login_window()  # Abre a tela de login após o cadastro bem-sucedido
+        except:
+            print("Registro falhou")
+
+    def open_login_window(self):
+        login_window = Login()
+        login_window.open()
+    
 
     def open(self):
         self._window = ModalView(size_hint=(0.9, 0.9))
